@@ -1,8 +1,8 @@
 
 let csvToJson = require('convert-csv-to-json');
-let approved = csvToJson.fieldDelimiter(',').formatValueByType().getJsonFromCsv('approved.csv');
-
 let fetch = require('node-fetch');
+
+var content = ""
 
 async function getColors() {
     const response = await fetch("https://api.sherwin-williams.com/prism/v1/colors/sherwin?lng=en-US&_corev=2.1.2", {
@@ -20,9 +20,9 @@ async function getColors() {
         },
         "body": null,
         "method": "GET"
-    }).catch(err => {console.log(err)});
+    }).catch(err => { console.log(err) });
 
-    let data = await response.json().catch(err => {console.log(err)})
+    let data = await response.json().catch(err => { console.log(err) })
     data = removeDuplicates(data.sort(rankingSorter("storeStripLocator", "colorNumber")))
     return data
 }
@@ -52,10 +52,11 @@ async function removeDuplicates(arr) {
     return clean
 }
 
-async function main() {
-    var colors = await getColors()
-    var content = "<html>\n<head></head>\n<body>\n<h1>Approved colors</h1>\n"
-    content = content + "<style> * { font-family: Arial,Helvetica Neue,Helvetica,sans-serif; padding: 10px 10px 10px 10px;} </style>\n"
+async function doColors() {
+    let colors = await getColors()
+    //console.log(colors)
+    let approved = csvToJson.fieldDelimiter(',').formatValueByType().getJsonFromCsv('colors.csv');
+    //console.log(approved)
     content = content + "<table>"
     content = content + "<tr><th>Color</th><th>Strip</th><th>Number</th><th>Trim Only</th><th>Body & Trim Combos</th><th>Front Door & Shutter Only</th></tr>\n"
     for (let c in colors) {
@@ -81,26 +82,89 @@ async function main() {
                 if (approved[a]["Front_Door_&_Shutter_Only"] != '') {
                     frontShutter = "<td>Front Door and Shutter Only</td>"
                 }
-                strip = "<td>" + approved[a]['Strip #'] + "</td>"
+                strip = "<td>" + approved[a]['Strip_#'] + "</td>"
                 number = "<td>" + colors[c].colorNumber + "</td>"
-                name = "<td><a style=" + textColor + " href=https://www.sherwin-williams.com/homeowners/color/find-and-explore-colors/paint-colors-by-family/SW" + colors[c].colorNumber + "-" + colors[c].name.toLowerCase().replace(/-/g, "-") + ">" + colors[c].name + "</td></a>"
+                name = "<td><a style=" + textColor + " href=https://www.sherwin-williams.com/homeowners/color/find-and-explore-colors/paint-colors-by-family/SW" + colors[c].colorNumber + "-" + colors[c].name.toLowerCase().replace(/ /g, "-") + ">" + colors[c].name + "</td></a>"
                 text = name + strip + number + trim + bodyAndTrim + frontShutter
                 content = content + "<tr " + rgb + ">" + text + "</tr>\n"
                 break
             }
         }
     }
+    content = content + "</table>\n"
+}
 
-    content = content + "</table>\n</body>\n</html>"
-
-    // Save to File
-
-    const fs = require('fs');
-    fs.writeFile('colors.html', content, err => {
-        if (err) {
-            console.error(err);
+async function doWhites() {
+    let colors = await getColors()
+    let approved = csvToJson.fieldDelimiter(',').formatValueByType().getJsonFromCsv('white.csv');
+    content = content + "<h1>White Body Colors</h1>\n"
+    content = content + "<table>"
+    content = content + "<tr><th>Color</th><th>Strip</th><th>Number</th>\n"
+    for (let c in colors) {
+        for (let a in approved) {
+            if (colors[c].colorNumber == approved[a]['SW_Paint_#']) {
+                if (colors[c].isDark) {
+                    textColor = "color:white;"
+                }
+                else {
+                    textColor = "color:black;"
+                }
+                rgb = "style=" + textColor + "background-color:rgb(" + colors[c].red + ',' + colors[c].green + "," + colors[c].blue + ");"
+                strip = "<td>" + approved[a]['Strip_#'] + "</td>"
+                number = "<td>" + colors[c].colorNumber + "</td>"
+                name = "<td><a style=" + textColor + " href=https://www.sherwin-williams.com/homeowners/color/find-and-explore-colors/paint-colors-by-family/SW" + colors[c].colorNumber + "-" + colors[c].name.toLowerCase().replace(/ /g, "-") + ">" + colors[c].name + "</td></a>"
+                text = name + strip + number
+                content = content + "<tr " + rgb + ">" + text + "</tr>\n"
+                break
+            }
         }
-    });
+    }
+    content = content + "</table>\n"
+}
+
+async function whiteDoorShutter() {
+    let colors = await getColors()
+    let approved = csvToJson.fieldDelimiter(',').formatValueByType().getJsonFromCsv('whiteDoorShutter.csv');
+    content = content + "<h1>White Doors and Shutters</h1>\n"
+    content = content + "<table>"
+    content = content + "<tr><th>Color</th><th>Strip</th><th>Number</th>\n"
+    for (let c in colors) {
+        for (let a in approved) {
+            if (colors[c].colorNumber == approved[a]['SW_Paint_#']) {
+                if (colors[c].isDark) {
+                    textColor = "color:white;"
+                }
+                else {
+                    textColor = "color:black;"
+                }
+                rgb = "style=" + textColor + "background-color:rgb(" + colors[c].red + ',' + colors[c].green + "," + colors[c].blue + ");"
+                strip = "<td>" + approved[a]['Strip_#'] + "</td>"
+                number = "<td>" + colors[c].colorNumber + "</td>"
+                name = "<td><a style=" + textColor + " href=https://www.sherwin-williams.com/homeowners/color/find-and-explore-colors/paint-colors-by-family/SW" + colors[c].colorNumber + "-" + colors[c].name.toLowerCase().replace(/ /g, "-") + ">" + colors[c].name + "</td></a>"
+                text = name + strip + number
+                content = content + "<tr " + rgb + ">" + text + "</tr>\n"
+                break
+            }
+        }
+    }
+    content = content + "</table>\n"
+}
+
+async function main () {
+content = content + "<html>\n<head></head>\n<body>\n<h1>Approved colors</h1>\n"
+content = content + "<style> * { font-family: Arial,Helvetica Neue,Helvetica,sans-serif; padding: 10px 10px 10px 10px;} </style>\n"
+
+await doColors()
+await doWhites()
+await whiteDoorShutter()
+
+content = content + "</body>\n</html>"
+const fs = require('fs');
+fs.writeFile('colors.html', content, err => {
+    if (err) {
+        console.error(err);
+    }
+});
 }
 
 main()
