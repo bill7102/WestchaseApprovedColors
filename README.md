@@ -12,5 +12,5 @@ Uses Node.js -- Geneates HTML page with color pallate and guidelines, reading fr
 
 Example site:
 
-https://sites.google.com/view/westchaseapprovedcolors/home
+https://sites.google.com/view/westchaseapprovedcolors/home  
 https://bill7102.github.io/WestchaseApprovedColors
